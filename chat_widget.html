@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Widget – Centered + Enter Key</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/geist-font/1.0.0/fonts/geist-sans/style.min.css">
+
+<style>
+    body {
+        font-family: 'Geist Sans', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f5f5f5;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #chat-widget-container {
+        width: 380px;
+        height: 520px;
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #chat-widget-header {
+        background: #854fff;
+        color: white;
+        padding: 20px;
+        font-weight: bold;
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    #chat-widget-body {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    #chat-widget-body p {
+        margin-bottom: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        max-width: 90%;
+        word-wrap: break-word;
+    }
+
+    #chat-widget-footer {
+        padding: 12px;
+        border-top: 1px solid #ddd;
+        display: flex;
+        gap: 10px;
+        background: #fafafa;
+    }
+
+    #chat-widget-input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+    }
+
+    #chat-widget-send {
+        background: #854fff;
+        color: white;
+        border: none;
+        padding: 9px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+</style>
+</head>
+
+<body>
+
+<div id="chat-widget-container">
+    <div id="chat-widget-header">
+        <span>Asista Pro – Demo</span>
+        <button onclick="closeChat()" style="background:none;border:none;color:white;font-size:18px;">✖</button>
+    </div>
+
+    <div id="chat-widget-body">
+        <p style='background:#854fff;color:white;'><strong>Hi 👋, how can we help?</strong></p>
+    </div>
+
+    <div id="chat-widget-footer">
+        <input type="text" id="chat-widget-input" placeholder="Type your message...">
+        <button id="chat-widget-send">Send</button>
+    </div>
+</div>
+
+<script>
+window.ChatWidgetConfig = {
+    webhook: {
+        url: "https://micgt.app.n8n.cloud/webhook/0df565a1-74b2-4587-b50e-06dd82d0cd9c/chat",
+        route: "general"
+    }
+};
+
+function getChatId() {
+    let chatId = sessionStorage.getItem("chatId");
+    if (!chatId) {
+        chatId = "chat_" + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem("chatId", chatId);
+    }
+    return chatId;
+}
+
+function closeChat() {
+    document.getElementById("chat-widget-container").style.display = "none";
+}
+
+function sendMessage() {
+    let input = document.getElementById("chat-widget-input");
+    let text = input.value.trim();
+    if (!text) return;
+
+    let chatBody = document.getElementById("chat-widget-body");
+
+    let userMsg = document.createElement("p");
+    userMsg.textContent = text;
+    userMsg.style.background = "#f1f1f1";
+    userMsg.style.color = "#333";
+    userMsg.style.marginLeft = "auto";
+    chatBody.appendChild(userMsg);
+
+    let chatId = getChatId();
+
+    fetch(window.ChatWidgetConfig.webhook.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            chatId: chatId,
+            message: text,
+            route: window.ChatWidgetConfig.webhook.route
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        let botMsg = document.createElement("p");
+        botMsg.innerHTML = data.output || "Sorry, I couldn't understand that.";
+        botMsg.style.background = "#854fff";
+        botMsg.style.color = "white";
+        botMsg.style.marginRight = "auto";
+        chatBody.appendChild(botMsg);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    });
+
+    input.value = "";
+}
+
+document.getElementById("chat-widget-send").onclick = sendMessage;
+
+document.getElementById("chat-widget-input").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+});
+</script>
+
+</body>
+</html>
